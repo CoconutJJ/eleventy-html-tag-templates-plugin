@@ -135,7 +135,7 @@ Tag templates support unlimited nesting levels, allowing you to create complex t
 1. **Within template definitions** - When creating your template structure
 2. **During template usage** - Within the content wrapped by paired tags
 
-> [!WARNING] Warning 
+> [!WARNING]
 > **Exercise caution with nested templates.** This plugin cannot detect infinite
 > recursion loops in your templates. Since Nunjucks supports arbitrary logic
 > within templates, it's theoretically impossible to automatically detect
