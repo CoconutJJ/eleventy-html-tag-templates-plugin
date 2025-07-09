@@ -1,40 +1,34 @@
-# eleventy-html-tag-templates-plugin
-Author: David Yue
+# Eleventy HTML Tag Templates Plugin
 
-HTML Tag Templates allow you to use custom HTML tags as parameterized templates
-that expand into regular HTML after processing. It is like a very limited form
-of React JSX.
+**Author:** David Yue  
+**GitHub:** https://github.com/CoconutJJ/eleventy-html-tag-templates-plugin
 
-### Why not use shortcodes?
+Transform your Eleventy templates with custom HTML tags that expand into regular HTML during build time. Think of it as a lightweight, template-focused alternative to React JSX components.
 
-Good question. Shortcodes are great for logic heavy templates where as this
-plugin is good for markup/style heavy templates. It is also cumbersome to add
-additional properties, class names, or ids onto a shortcode, whereas this plugin
-allows you to do this naturally. To that end, shortcodes also look very ugly
-when used very repeatedly in HTML code
+## Why Use This Plugin?
 
-## Getting Started
+While Eleventy's shortcodes excel at logic-heavy templates, HTML Tag Templates shine for markup and style-heavy components. This plugin makes it natural to add properties, classes, and IDs to your templates without the visual clutter that comes with repeated shortcode usage in HTML.
 
-You should setup your `.eleventy.js` config file similar to what we have below
+## Quick Start
+
+Configure your `.eleventy.js` file:
 
 ```js
 import { HTMLTagTemplates } from "eleventy-html-tag-templates";
 import Nunjucks from "nunjucks";
 
 export default function (eleventyConfig) {
-  // Create a new nunjucks environment, the eleventy-html-tag-templates-plugin
-  // requires a nunjucks environment to render your tag templates.
+  // Set up Nunjucks environment
   let nunjucksEnvironment = new Nunjucks.Environment(
     new Nunjucks.FileSystemLoader("src/_includes")
   );
 
-  // This line is optional but if you omit it, your templates will not be able to
-  // use any custom nunjucks related features defined in your eleventy config file (filters, shortcodes, etc.)
+  // Optional: Enable custom Nunjucks features from your Eleventy config
   eleventyConfig.setLibrary("njk", nunjucksEnvironment);
 
   const htmlTagTemplates = new HTMLTagTemplates();
 
-  config.addPlugin(htmlTagTemplates.eleventyPlugin(), {
+  eleventyConfig.addPlugin(htmlTagTemplates.eleventyPlugin(), {
     tagTemplateDirectory: "path/to/templates/dir",
     nunjucksEnvironment: nunjucksEnvironment,
     styleSheetPreprocessor: (filepath) => {
@@ -44,258 +38,226 @@ export default function (eleventyConfig) {
 }
 ```
 
-## How to define tag templates
+## Creating Tag Templates
 
-In your templates directory create a new nunjucks file with the tag name. For
-instance, `tag.njk` will map to `<tag/>`. The tag name defaults to the file
-name, however if you wish to keep the filename but use a different name for the
-actual tag itself, you can specify the tag name in the tag template front matter
+### Basic Templates
 
-The following example will define: `<Tag/>` instead of `<tag/>`
+Create a Nunjucks file in your templates directory. The filename becomes the tag name:
 
+**File:** `button.njk`
 ```html
----
-tag: "Tag"
----
-
-<div class="tag"></div>
+<button class="btn">{{ label }}</button>
 ```
 
-Tag templates can also have attributes like regular HTML
-
+**Usage:**
 ```html
-<Tag title="A cool tag" />
+<button label="Click me" />
 ```
 
-These attributes are passed as nunjucks variables in our tag template file. We
-can access their values like such:
+### Custom Tag Names
+
+Override the default tag name using frontmatter:
 
 ```html
 ---
-tag: "Tag"
+tag: "PrimaryButton"
 ---
-
-<div class="tag">{{ title }}</div>
+<button class="btn btn-primary">{{ label }}</button>
 ```
 
-Each tag template **can only have at most one top level HTML element**, called
-the root element. Having two sibling elements without a common parent is not
-allowed.
-
-❌ Not allowed - we must wrap another HTML tag around these two `<div>` elements
-
+**Usage:**
 ```html
----
-tag: "Tag"
----
-
-<div class="tag-left">{{ title }}</div>
-<div class="tag-right">{{ description }}</div>
+<PrimaryButton label="Submit" />
 ```
 
-✅ OK
+### Template Structure Rules
 
+Each tag template must have exactly one root element:
+
+**❌ Invalid - Multiple root elements:**
 ```html
----
-tag: "Tag"
----
-<div class="tag">
-  <div class="tag-left">{{ title }}</div>
-  <div class="tag-right">{{ description }}</div>
+<div class="left">{{ title }}</div>
+<div class="right">{{ description }}</div>
+```
+
+**✅ Valid - Single root element:**
+```html
+<div class="container">
+  <div class="left">{{ title }}</div>
+  <div class="right">{{ description }}</div>
 </div>
 ```
 
-## Paired Tag Templates
+## Advanced Features
 
-So far we have only seen self-closing tag templates, we can also have paired tag
-templates like many of the regular HTML tags
+### Paired Tags with Content
 
-```html
-<Title subtitle="A cool tag">
-    Hello World!
-</Title>
-```
+Create templates that wrap content using the special `content` variable:
 
-Each template file is passed a special nunjucks variable called `content` that
-contains the children of the tag. We can access the children in the template
-definition as such:
-
+**Template:**
 ```html
 ---
-tag: "Title"
+tag: "Card"
 ---
-<div class="title">
-  <div class="tag-left">{{ content }}</div>
-  <div class="tag-right">{{ subtitle }}</div>
+<div class="card">
+  <h2>{{ title }}</h2>
+  <div class="card-body">{{ content }}</div>
 </div>
 ```
 
+**Usage:**
+```html
+<Card title="Welcome">
+  <p>This content goes inside the card body.</p>
+</Card>
+```
 
-## CSS Styling and Preprocessors
+### Integrated CSS Styling
 
-We can also attach a stylesheet to a tag template using the `stylesheet` front
-matter property. This property takes the filepath of the stylesheet.
+Attach stylesheets directly to your templates:
 
 ```html
 ---
-tag: "Tag"
-stylesheet: "src/_includes/css/tag.css"
+tag: "Hero"
+stylesheet: "src/_includes/css/hero.css"
 ---
-
-<div class="tag">
-  <div class="tag-left">{{ title }}</div>
-  <div class="tag-right">{{ description }}</div>
-</div>
+<section class="hero">
+  <h1>{{ title }}</h1>
+  <p>{{ subtitle }}</p>
+</section>
 ```
 
-When you build your site, the linked stylesheet will be read and inserted into
-the `<head>` section of the corresponding HTML page between `<style></style>`
-tags. If a tag is not used in an HTML file, it's stylesheet will also not be
-inserted.
+The stylesheet automatically gets injected into the `<head>` of pages that use this template. Unused templates won't add unnecessary CSS to your pages.
 
-### Preprocessors
+### CSS Preprocessor Support
 
-If you wish to use CSS preprocessors like SASS or LESS for styling tag
-templates, you can define a custom `styleSheetPreprocessor` function inside the
-Eleventy plugin config object.
-
-The function should take in the stylesheet `filepath: string` and return the
-compiled CSS source code `string`. In the the sample config above, we are only
-expecting regular `.css` files, hence we just read the file and return it's
-contents
+Use SASS, LESS, or other preprocessors by defining a custom processor function:
 
 ```js
-  config.addPlugin(htmlTagTemplates.eleventyPlugin(), {
-    tagTemplateDirectory: "path/to/templates/dir",
-    nunjucksEnvironment: nunjucksEnvironment,
-    styleSheetPreprocessor: (filepath) => {
-      return readFileSync(filepath);
-    },
-  });
+// For SASS
+eleventyConfig.addPlugin(htmlTagTemplates.eleventyPlugin(), {
+  tagTemplateDirectory: "src/_templates",
+  nunjucksEnvironment: nunjucksEnvironment,
+  styleSheetPreprocessor: (filepath) => {
+    return sass.renderSync({ file: filepath }).css.toString();
+  },
+});
 ```
 
 ## Attribute Forwarding
 
-We have seen how tag templates can have attributes just like regular HTML,
-however sometimes we wish to add regular HTML attributes to a tag template like
-`href`, `style`, etc. However, currently this means everytime we wish to add a
-regular HTML attribute, we have to modify the template to support it. For
-instance, if we wanted to use the `style` attribute, we would have to do this:
+The plugin automatically forwards valid HTML attributes to your template's root element, making your templates more flexible without manual configuration.
 
+### Basic Forwarding
+
+**Template:**
 ```html
 ---
-tag: "Tag"
-stylesheet: "src/_includes/css/tag.css"
+tag: "Link"
 ---
+<a href="#">{{ content }}</a>
+```
 
-<div class="tag" style="{{ style }}">
-  <div class="tag-left">{{ title }}</div>
-  <div class="tag-right">{{ description }}</div>
+**Usage:**
+```html
+<Link href="/about" target="_blank">About Us</Link>
+```
+
+**Result:**
+```html
+<a href="/about" target="_blank">About Us</a>
+```
+
+### Attribute Validation
+
+Only valid HTML attributes for the root element are forwarded:
+
+```html
+<!-- ✅ 'style' is valid for div -->
+<MyDiv style="color: red;" title="Valid title" />
+
+<!-- ❌ 'customProp' becomes a template variable, not an attribute -->
+<MyDiv customProp="value" />
+```
+
+### Class and ID Merging
+
+The `class` and `id` attributes get special treatment - they merge instead of overwriting:
+
+**Template:**
+```html
+---
+tag: "Button"
+---
+<button class="btn" id="base">{{ label }}</button>
+```
+
+**Usage:**
+```html
+<Button class="btn-primary" id="submit-btn" label="Submit" />
+```
+
+**Result:**
+```html
+<button class="btn btn-primary" id="base submit-btn">Submit</button>
+```
+
+### Attribute Override Behavior
+
+Template attributes are overridden by usage attributes (except `class` and `id`):
+
+**Template:**
+```html
+<a href="#default">Default Link</a>
+```
+
+**Usage:**
+```html
+<MyLink href="/custom">Custom Link</MyLink>
+```
+
+**Result:**
+```html
+<a href="/custom">Custom Link</a>
+```
+
+## Configuration Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `tagTemplateDirectory` | string | Path to your tag template files |
+| `nunjucksEnvironment` | Nunjucks.Environment | Nunjucks environment for rendering |
+| `styleSheetPreprocessor` | function | Optional CSS preprocessor function |
+
+## Best Practices
+
+1. **Keep templates focused** - Each template should represent a single, reusable component
+2. **Use semantic filenames** - Template filenames should clearly indicate their purpose
+3. **Leverage CSS integration** - Colocate styles with templates for better maintainability
+4. **Take advantage of attribute forwarding** - Design templates to work naturally with standard HTML attributes
+5. **Consider template composition** - Use paired tags to create flexible, composable components
+
+## Example: Complete Component
+
+**File:** `src/_templates/alert.njk`
+```html
+---
+tag: "Alert"
+stylesheet: "src/_includes/css/alert.css"
+---
+<div class="alert alert-{{ type || 'info' }}" role="alert">
+  {% if title %}
+    <h4 class="alert-title">{{ title }}</h4>
+  {% endif %}
+  <div class="alert-content">{{ content }}</div>
 </div>
 ```
 
-This is annoying and cumbersome to do for all your templates. Luckily, our
-plugin automatically fowards any **valid attributes** to the **root element** of
-the template definition. Attribute forwarding obeys the following rules:
+**Usage:**
+```html
+<Alert type="warning" title="Important Notice" class="mb-4">
+  Please review the terms before proceeding.
+</Alert>
+```
 
-1. The attribute being forwarded must be **valid**. A **valid attribute** is any
-   attribute that the root element in your template definition could have in
-   regular HTML. For instance, trying to forward the attribute named `apple` to
-   a `<div>` will not work. Instead `apple` would become a regular template
-   variable. Consider the following template definition:
-
-    ```html
-    ---
-    tag: "Tag"
-    stylesheet: "src/_includes/css/tag.css"
-    ---
-
-    <div>
-    <div class="tag-left">{{ title }}</div>
-    <div class="tag-right">{{ description }}</div>
-    </div>
-    ```
-
-    and the following usage:
-    ```html
-    <Tag title="Hello" description="world" apple="pear"/>
-    ```
-
-    The correct expansion is 
-    ```html
-    <div>
-    <div class="tag-left">Hello</div>
-    <div class="tag-right">world</div>
-    </div>
-    ```
-
-    Whereas, this is incorrect
-    ```html
-    <div apple="pear">
-    <div class="tag-left">Hello</div>
-    <div class="tag-right">world</div>
-    </div>
-    ```
-    ❌ `apple` is not a recognized attribute for `div`.
-
-    ✅ But using the `style` attribute will work:
-
-    ```html
-    <Tag title="Hello" description="world" style="width:100%;"/>
-    ```
-    generates
-
-    ```html
-    <div style="width:100%">
-    <div class="tag-left">Hello</div>
-    <div class="tag-right">world</div>
-    </div>
-    ```
-2.  The attribute being forwarded will overwrite the same attribute defined in
-    the tag template file should such attribute exist
-
-    ```html
-    ---
-    tag: "Link"
-    stylesheet: "src/_includes/css/link.css"
-    ---
-
-    <a href="#">This is a link</a>
-    ```
-
-    and usage:
-
-    ```html
-    <Link href="/hello"/>
-    ```
-
-    This will overwrite the existing `href` attribute, and will generate
-
-    ```html
-    <a href="/hello">This is a link</a>
-    ```
-
-    There are two HTML attributes that are exceptions to this rule: `class` and
-    `id`. Specifying either of these attributes in both the tag template and the
-    template definition root element will join the two attribute values
-    together. This is especially useful for class lists:
-
-    ```html
-    ---
-    tag: "Link"
-    stylesheet: "src/_includes/css/link.css"
-    ---
-
-    <a href="#" class="a">{{ content }}</a>
-    ```
-
-    and usage:
-
-    ```html
-    <Link class="b">This is a link</Link>
-    ```
-
-    will generate
-    ```html
-    <a href="#" class="a b">This is a link</a>
-    ```
+This creates a flexible, styled alert component that integrates seamlessly with your existing HTML and CSS workflow.
