@@ -3,11 +3,16 @@
 **Author:** David Yue  
 **GitHub:** https://github.com/CoconutJJ/eleventy-html-tag-templates-plugin
 
-Transform your Eleventy templates with custom HTML tags that expand into regular HTML during build time. Think of it as a lightweight, template-focused alternative to React JSX components.
+Transform your Eleventy templates with custom HTML tags that expand into regular
+HTML during build time. Think of it as a lightweight, template-focused
+alternative to React JSX components.
 
 ## Why Use This Plugin?
 
-While Eleventy's shortcodes excel at logic-heavy templates, HTML Tag Templates shine for markup and style-heavy components. This plugin makes it natural to add properties, classes, and IDs to your templates without the visual clutter that comes with repeated shortcode usage in HTML.
+While Eleventy's shortcodes excel at logic-heavy templates, HTML Tag Templates
+shine for markup and style-heavy components. This plugin makes it natural to add
+properties, classes, and IDs to your templates without the visual clutter that
+comes with repeated shortcode usage in HTML.
 
 ## Installation
 
@@ -52,7 +57,8 @@ export default function (eleventyConfig) {
 
 ### Basic Templates
 
-Create a Nunjucks file in your templates directory. The filename becomes the tag name:
+Create a Nunjucks file in your templates directory. The filename becomes the tag
+name:
 
 **File:** `button.njk`
 ```html
@@ -122,6 +128,21 @@ tag: "Card"
 </Card>
 ```
 
+### Nested Tag Templates
+
+Tag templates support unlimited nesting levels, allowing you to create complex template hierarchies. You can nest templates in two ways:
+
+1. **Within template definitions** - When creating your template structure
+2. **During template usage** - Within the content wrapped by paired tags
+
+> [!WARNING] Warning 
+> **Exercise caution with nested templates.** This plugin cannot detect infinite
+> recursion loops in your templates. Since Nunjucks supports arbitrary logic
+> within templates, it's theoretically impossible to automatically detect
+> whether a template will cause infinite recursion (this is known as the halting
+> problem). Currently, no recursion detection is implemented, so infinite loops
+> will cause your application to hang or crash.
+
 ### Integrated CSS Styling
 
 Attach stylesheets directly to your templates:
@@ -137,7 +158,8 @@ stylesheet: "src/_includes/css/hero.css"
 </section>
 ```
 
-The stylesheet automatically gets injected into the `<head>` of pages that use this template. Unused templates won't add unnecessary CSS to your pages.
+The stylesheet automatically gets injected into the `<head>` of pages that use
+this template. Unused templates won't add unnecessary CSS to your pages.
 
 ### CSS Preprocessor Support
 
@@ -156,7 +178,8 @@ eleventyConfig.addPlugin(htmlTagTemplates.eleventyPlugin(), {
 
 ## Attribute Forwarding
 
-The plugin automatically forwards valid HTML attributes to your template's root element, making your templates more flexible without manual configuration.
+The plugin automatically forwards valid HTML attributes to your template's root
+element, making your templates more flexible without manual configuration.
 
 ### Basic Forwarding
 
@@ -189,10 +212,16 @@ Only valid HTML attributes for the root element are forwarded:
 <!-- ❌ 'customProp' becomes a template variable, not an attribute -->
 <MyDiv customProp="value" />
 ```
+> [!NOTE]  
+> If the root element is another tag template, all attributes will be forwarded
+> with normal overriding behaviour. This is to support nested tag templates. The
+> template will continue to expand until the root element is a regular HTML
+> element where the HTML attributes only rule applies.
 
 ### Class and ID Merging
 
-The `class` and `id` attributes get special treatment - they merge instead of overwriting:
+The `class` and `id` attributes get special treatment - they merge instead of
+overwriting:
 
 **Template:**
 ```html
@@ -214,7 +243,8 @@ tag: "Button"
 
 ### Attribute Override Behavior
 
-Template attributes are overridden by usage attributes (except `class` and `id`):
+Template attributes are overridden by usage attributes (except `class` and
+`id`):
 
 **Template:**
 ```html
@@ -241,11 +271,16 @@ Template attributes are overridden by usage attributes (except `class` and `id`)
 
 ## Best Practices
 
-1. **Keep templates focused** - Each template should represent a single, reusable component
-2. **Use semantic filenames** - Template filenames should clearly indicate their purpose
-3. **Leverage CSS integration** - Colocate styles with templates for better maintainability
-4. **Take advantage of attribute forwarding** - Design templates to work naturally with standard HTML attributes
-5. **Consider template composition** - Use paired tags to create flexible, composable components
+1. **Keep templates focused** - Each template should represent a single,
+   reusable component
+2. **Use semantic filenames** - Template filenames should clearly indicate their
+   purpose
+3. **Leverage CSS integration** - Colocate styles with templates for better
+   maintainability
+4. **Take advantage of attribute forwarding** - Design templates to work
+   naturally with standard HTML attributes
+5. **Consider template composition** - Use paired tags to create flexible,
+   composable components
 
 ## Example: Complete Component
 
@@ -270,4 +305,5 @@ stylesheet: "src/_includes/css/alert.css"
 </Alert>
 ```
 
-This creates a flexible, styled alert component that integrates seamlessly with your existing HTML and CSS workflow.
+This creates a flexible, styled alert component that integrates seamlessly with
+your existing HTML and CSS workflow.

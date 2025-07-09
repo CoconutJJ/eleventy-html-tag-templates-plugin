@@ -21,6 +21,7 @@
     "gray-matter": "^4.0.3",
     "html-element-attributes": "^3.4.0",
     "nunjucks": "^3.2.4",
+    "terser": "^5.43.1",
     "typescript": "^5.8.3"
   }
 }
