@@ -1,0 +1,26 @@
+{
+  "name": "eleventy-html-tag-templates",
+  "version": "1.0.0",
+  "description": "11ty plugin to use custom HTML tag templates in your code",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "David Yue <davidyue5819@gmail.com>",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.1",
+  "dependencies": {
+    "@types/node": "^24.0.11",
+    "@types/nunjucks": "^3.2.6",
+    "cheerio": "^1.1.0",
+    "gray-matter": "^4.0.3",
+    "html-element-attributes": "^3.4.0",
+    "nunjucks": "^3.2.4",
+    "typescript": "^5.8.3"
+  }
+}
