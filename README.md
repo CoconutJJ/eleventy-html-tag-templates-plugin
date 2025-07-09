@@ -9,6 +9,16 @@ Transform your Eleventy templates with custom HTML tags that expand into regular
 
 While Eleventy's shortcodes excel at logic-heavy templates, HTML Tag Templates shine for markup and style-heavy components. This plugin makes it natural to add properties, classes, and IDs to your templates without the visual clutter that comes with repeated shortcode usage in HTML.
 
+## Installation
+
+You can install this package with `pnpm`
+
+```sh
+$ pnpm add eleventy-html-tag-templates
+```
+
+`npm` and `yarn` should work as well.
+
 ## Quick Start
 
 Configure your `.eleventy.js` file:
