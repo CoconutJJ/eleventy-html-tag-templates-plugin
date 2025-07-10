@@ -11,9 +11,54 @@ export type HTMLTagTemplatesOptions = {
   styleSheetPreprocessor: (filepath: string) => string;
 };
 
+class TagTemplate {
+  private tag_name: string;
+  private template_content: string;
+  private stylesheet_path: string = "";
+  private nunjucksEnvironment: NunjucksEnvironment;
+
+  constructor(
+    template_filepath: string,
+    nunjucksEnvironment: NunjucksEnvironment
+  ) {
+    this.nunjucksEnvironment = nunjucksEnvironment;
+
+    let contents = readFileSync(template_filepath).toString();
+
+    let { content, data } = matter(contents);
+
+    if (!("tag" in data)) {
+      this.tag_name = template_filepath.split("/")[-1].split(".")[0];
+    } else {
+      this.tag_name = data["tag"];
+    }
+
+    if ("stylesheet" in data) {
+      this.stylesheet_path = data["stylesheet"];
+    }
+
+    this.template_content = content;
+  }
+
+  public render(variables: object) {
+    return this.nunjucksEnvironment.renderString(
+      this.template_content,
+      variables
+    );
+  }
+
+  public stylesheet() {
+    return this.stylesheet_path;
+  }
+
+  public tagname() {
+    return this.tag_name;
+  }
+}
+
 export class HTMLTagTemplates {
   private config: HTMLTagTemplatesOptions;
-  private templates: { [key: string]: string } = {};
+  private templates: { [key: string]: TagTemplate } = {};
 
   constructor(config: HTMLTagTemplatesOptions) {
     this.config = config;
@@ -33,82 +78,46 @@ export class HTMLTagTemplates {
         continue;
       }
 
-      let template_content = readFileSync(full_path).toString();
+      let template = new TagTemplate(
+        full_path,
+        this.config.nunjucksEnvironment
+      );
 
-      let file_stem = filename.split(".")[0];
-
-      this.add_template(template_content, file_stem);
+      this.templates[template.tagname()] = template;
     }
   }
 
-  public add_template(template: string, default_tag_name: string) {
-    const { data } = matter(template);
+  private get_classlist(attributes: Record<string, string>) {
+    let attr = "class";
 
-    if ("tag" in data) {
-      if (data["tag"] in this.templates) {
-        throw new Error(`There is already a tag template named ${data["tag"]}`);
-      }
-      this.templates[data["tag"]] = template;
-    } else {
-      if (default_tag_name in this.templates) {
-        throw new Error(`Inferred tag name ${default_tag_name} already exists`);
-      }
-      this.templates[default_tag_name] = template;
+    if (attr in attributes) {
+      return attributes[attr].split(" ");
     }
+
+    return [];
   }
 
-  private forward_html_attributes(
-    html_content: string,
-    attributes: { [key: string]: string }
-  ) {
-    const expanded_template = cheerio.load(html_content, {}, false);
+  private get_idlist(attributes: Record<string, string>) {
+    let attr = "id";
 
-    if (expanded_template.root().children().length > 1) {
-      throw new Error("Template definition must have only one top level tag");
+    if (attr in attributes) {
+      return attributes[attr].split(" ");
     }
 
-    let top_element = expanded_template.root().children()[0];
-
-    // if the tag attribute is a valid attribute for the top level, forward it onto the tag
-    for (let [attr, value] of Object.entries(attributes)) {
-      // if the top element is another tag template, we forward all attributes
-      if (!(top_element.name in this.templates)) {
-        let exclusiveAttributes =
-          top_element.name in htmlElementAttributes
-            ? htmlElementAttributes[top_element.name]
-            : [];
-
-        let allowed_attributes = exclusiveAttributes.concat(
-          htmlElementAttributes["*"]
-        );
-        if (allowed_attributes.indexOf(attr) == -1) {
-          continue;
-        }
-      }
-      if (attr === "class") {
-        if ("class" in top_element.attribs) {
-          value = value
-            .split(" ")
-            .concat(top_element.attribs["class"])
-            .join(" ");
-        }
-      }
-      if (attr === "id") {
-        if ("id" in top_element.attribs) {
-          value = value
-            .split(" ")
-            .concat(top_element.attribs["class"])
-            .join(" ");
-        }
-      }
-
-      top_element.attribs[attr] = value;
-    }
-
-    return expanded_template.html();
+    return [];
   }
 
-  public recursive_transform(html_content: string) {
+  private get_stylelist(attributes: Record<string, string>) {
+    let attr = "style";
+
+    if (attr in attributes) {
+      return attributes[attr].split(" ");
+    }
+
+    return [];
+  }
+
+  public recursive_template_transform(html_content: string) {
     let processed_tags = new Set<string>();
     let template_css = "";
 
@@ -148,10 +157,7 @@ export class HTMLTagTemplates {
     let template_css = "";
     let did_transform = false;
     for (let [tag, template] of Object.entries(this.templates)) {
-      const { content, data } = matter(template);
-
       let has_tag = false;
-      let _this = this;
 
       $(tag).each(function () {
         has_tag = true;
@@ -159,24 +165,48 @@ export class HTMLTagTemplates {
         let $el = $(this);
         let attributes = $el.attr();
 
+        if (!attributes) attributes = {};
+
         // render the template definition
-        let expansion = _this.config.nunjucksEnvironment.renderString(content, {
+        let expansion = template.render({
           ...attributes,
           content: $el.html(),
-        });
+          forward: (...keys: string[]) => {
+            let attribute_list = [];
+            let expanded_keys = new Set<string>();
 
-        // forward attributes
-        if (attributes !== undefined) {
-          expansion = _this.forward_html_attributes(expansion, attributes);
-        }
+            if (keys.length > 0) {
+              for (let key of keys) {
+                if (key == "*") {
+                  Object.keys(attributes).forEach((e) => expanded_keys.add(e));
+                  continue;
+                }
+
+                if (key.startsWith("!")) {
+                  expanded_keys.delete(key.slice(1));
+                  continue;
+                }
+
+                expanded_keys.add(key);
+              }
+            } else {
+              expanded_keys = new Set(Object.keys(attributes));
+            }
+
+            for (let key of expanded_keys) {
+              if (key in attributes) {
+                let value = attributes[key];
+                attribute_list.push(`${key}=${value}`);
+              }
+            }
+
+            return attribute_list.join(" ");
+          },
+        });
 
         // replace tag template with expansion
         $el.replaceWith(expansion);
       });
-
-      if (!("stylesheet" in data)) {
-        continue;
-      }
 
       if (!has_tag) {
         continue;
@@ -186,8 +216,7 @@ export class HTMLTagTemplates {
         continue;
       }
 
-      let stylesheet_path = data["stylesheet"];
-      template_css += this.config.styleSheetPreprocessor(stylesheet_path);
+      template_css += this.config.styleSheetPreprocessor(template.stylesheet());
       processed_tags.add(tag);
     }
     return { html: $.html(), css: template_css, transformed: did_transform };
@@ -197,13 +226,14 @@ export class HTMLTagTemplates {
     return (eleventyConfig: any, pluginOptions: HTMLTagTemplatesOptions) => {
       this.config = pluginOptions;
       this.process_template_directory(this.config.tagTemplateDirectory);
+      eleventyConfig.addWatchTarget(this.config.tagTemplateDirectory);
       eleventyConfig.addTransform(
         "html-tag-templates-transform",
         (content: string, outputPath: string) => {
           if (!outputPath.endsWith(".html")) {
             return content;
           }
-          return this.recursive_transform(content);
+          return this.recursive_template_transform(content);
         }
       );
     };

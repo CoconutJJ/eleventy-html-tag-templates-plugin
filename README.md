@@ -86,6 +86,7 @@ tag: "PrimaryButton"
 <PrimaryButton label="Submit" />
 ```
 
+
 ### Template Structure Rules
 
 Each tag template must have exactly one root element:
@@ -130,7 +131,8 @@ tag: "Card"
 
 ### Nested Tag Templates
 
-Tag templates support unlimited nesting levels, allowing you to create complex template hierarchies. You can nest templates in two ways:
+Tag templates support unlimited nesting levels, allowing you to create complex
+template hierarchies. You can nest templates in two ways:
 
 1. **Within template definitions** - When creating your template structure
 2. **During template usage** - Within the content wrapped by paired tags
@@ -178,88 +180,33 @@ eleventyConfig.addPlugin(htmlTagTemplates.eleventyPlugin(), {
 
 ## Attribute Forwarding
 
-The plugin automatically forwards valid HTML attributes to your template's root
-element, making your templates more flexible without manual configuration.
+You can automatically forward all or a select number of attributes using the
+`forward()` nunjucks template function
 
-### Basic Forwarding
-
-**Template:**
-```html
----
-tag: "Link"
----
-<a href="#">{{ content }}</a>
+```xml
+<Tag label="a" name="b" />
+```
+with template definition
+```xml
+<AnotherTag {{ forward('label', 'name') }} />
 ```
 
-**Usage:**
-```html
-<Link href="/about" target="_blank">About Us</Link>
+The expansion will be 
+
+```xml
+<AnotherTag label="a" name="b" />
 ```
 
-**Result:**
-```html
-<a href="/about" target="_blank">About Us</a>
+If no argument are passed to `forward`, it will forward all attributes passed.
+You can also selectively exclude attributes from being forwarded. This is done
+using the `!` symbol before the attribute name. To do this you first need
+to tell `forward` to include all attributes explicitly using `*`. This example 
+shows how to forward all attributes except `label`.
+
+```xml
+<AnotherTag {{ forward('*', '!label') }} />
 ```
 
-### Attribute Validation
-
-Only valid HTML attributes for the root element are forwarded:
-
-```html
-<!-- ✅ 'style' is valid for div -->
-<MyDiv style="color: red;" title="Valid title" />
-
-<!-- ❌ 'customProp' becomes a template variable, not an attribute -->
-<MyDiv customProp="value" />
-```
-> [!NOTE]  
-> If the root element is another tag template, all attributes will be forwarded
-> with normal overriding behaviour. This is to support nested tag templates. The
-> template will continue to expand until the root element is a regular HTML
-> element where the HTML attributes only rule applies.
-
-### Class and ID Merging
-
-The `class` and `id` attributes get special treatment - they merge instead of
-overwriting:
-
-**Template:**
-```html
----
-tag: "Button"
----
-<button class="btn" id="base">{{ label }}</button>
-```
-
-**Usage:**
-```html
-<Button class="btn-primary" id="submit-btn" label="Submit" />
-```
-
-**Result:**
-```html
-<button class="btn btn-primary" id="base submit-btn">Submit</button>
-```
-
-### Attribute Override Behavior
-
-Template attributes are overridden by usage attributes (except `class` and
-`id`):
-
-**Template:**
-```html
-<a href="#default">Default Link</a>
-```
-
-**Usage:**
-```html
-<MyLink href="/custom">Custom Link</MyLink>
-```
-
-**Result:**
-```html
-<a href="/custom">Custom Link</a>
-```
 
 ## Configuration Options
 
