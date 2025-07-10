@@ -1,4 +1,5 @@
 # Eleventy HTML Tag Templates Plugin
+<img src="static/logo.png" alt="drawing" width="400"/>
 
 **Author:** David Yue  
 **GitHub:** https://github.com/CoconutJJ/eleventy-html-tag-templates-plugin
